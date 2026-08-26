@@ -68,17 +68,18 @@ EOF
 systemctl daemon-reload
 systemctl enable --now shm-backup-bot.service
 
-# 5. Create global binary `shm-backup`
+# 5. Create global binary shortcut
 echo "[5/5] Creating global 'shm-backup' executable command..."
 cat <<EOF > /usr/local/bin/shm-backup
 #!/usr/bin/env bash
-exec $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/cli.py "\$@"
+exec $INSTALL_DIR/shm-backup.sh "\$@"
 EOF
 
 chmod +x /usr/local/bin/shm-backup
+chmod +x "$INSTALL_DIR/shm-backup.sh"
 
-# 6. Configure Cron job using global binary
-CRON_CMD="0 3 * * * /usr/local/bin/shm-backup > /dev/null 2>&1"
+# 6. Configure Cron job using non-interactive flag
+CRON_CMD="0 3 * * * /usr/local/bin/shm-backup --run > /dev/null 2>&1"
 
 (crontab -l 2>/dev/null | grep -F "shm-backup") || (
     (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -
