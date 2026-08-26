@@ -173,12 +173,16 @@ update_script() {
 }
 
 remove_script() {
-    read -rp "⚠️ Remove shm-backup cron job, global command, and files? (y/N): " confirm
+    read -rp "⚠️ Remove shm-backup cron job, global command, and files from $SCRIPT_DIR? (y/N): " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        echo -e "\n\033[33m⏳ Cleaning up...\033[0m"
         rm -f /usr/local/bin/shm-backup
         (crontab -l 2>/dev/null | grep -v "shm-backup") | crontab - 2>/dev/null || true
+
+        # Remove the backup project directory
         rm -rf "$SCRIPT_DIR"
-        echo -e "\n\033[32m✅ Complete cleanup finished.\033[0m"
+
+        echo -e "\033[32m✅ Complete cleanup finished. Project folder removed.\033[0m"
         exit 0
     fi
 }
