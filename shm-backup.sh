@@ -45,8 +45,8 @@ get_current_schedule_label() {
     case "$(get_current_schedule)" in
         "6h") echo "Every 6 hours" ;;
         "12h") echo "Every 12 hours" ;;
-        "daily") echo "Daily at 00:00 UTC (03:00 MSK)" ;;
-        "weekly") echo "Weekly on Sunday at 00:00 UTC (03:00 MSK)" ;;
+        "daily") echo "Daily at 00:00 UTC" ;;
+        "weekly") echo "Weekly on Sunday at 00:00 UTC" ;;
         "disabled") echo "Disabled" ;;
         *) echo "Custom Cron" ;;
     esac
@@ -132,7 +132,7 @@ configure_schedule() {
     echo -e "\033[1;36mBACKUP FREQUENCY CONFIGURATION\033[0m\n"
     echo -e "   1. Every 6 hours$(mark '6h')"
     echo -e "   2. Every 12 hours$(mark '12h')"
-    echo -e "   3. Daily at 00:00 UTC (03:00 MSK)$(mark 'daily')"
+    echo -e "   3. Daily at 00:00 UTC$(mark 'daily')"
     echo -e "   4. Weekly (Every Sunday at 00:00 UTC)$(mark 'weekly')"
     echo -e "   5. Disable automated backups$(mark 'disabled')"
     echo ""
