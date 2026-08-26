@@ -12,7 +12,7 @@ echo "========================================="
 # 1. Ensure git, python3.12, and python3.12-venv are installed
 echo "[1/5] Checking dependencies and cloning repository..."
 
-if ! command -v git &> /dev/null || ! command -v python3.12 &> /dev/null || ! python3.12 -m venv --help &> /dev/null; then
+if ! command -v git &> /dev/null || ! python3.12 -c "import ensurepip" &> /dev/null; then
     echo "[!] Installing missing system packages (git, python3.12, python3.12-venv)..."
     apt-get update && apt-get install -y git python3.12 python3.12-venv || yum install -y git python312
 fi
