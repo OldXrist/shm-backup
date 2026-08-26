@@ -3,26 +3,35 @@
 set -e
 
 INSTALL_DIR="/opt/shm-backup"
+REPO_URL="https://github.com/OldXrist/shm-backup.git"
 
 echo "========================================="
 echo "  SHM Backup Tool Installation Setup"
 echo "========================================="
 
-# 1. Create target directory if needed and copy files
-if [ "$(pwd)" != "$INSTALL_DIR" ]; then
-    echo "[1/4] Copying files to $INSTALL_DIR..."
-    mkdir -p "$INSTALL_DIR"
-    cp -r ./* "$INSTALL_DIR/"
-    cd "$INSTALL_DIR"
+# 1. Ensure git is installed and target directory is ready
+if ! command -v git &> /dev/null; then
+    echo "[!] Git is required. Installing git..."
+    apt-get update -qq && apt-get install -y -qq git || yum install -y git
 fi
 
-# 2. Install dependencies into virtual environment using requirements.txt
+echo "[1/4] Cloning repository to $INSTALL_DIR..."
+if [ -d "$INSTALL_DIR/.git" ]; then
+    git -C "$INSTALL_DIR" pull --quiet
+else
+    mkdir -p "$INSTALL_DIR"
+    git clone --quiet "$REPO_URL" "$INSTALL_DIR"
+fi
+
+cd "$INSTALL_DIR"
+
+# 2. Install Python dependencies
 echo "[2/4] Installing Python dependencies..."
 python3 -m venv venv
 "$INSTALL_DIR/venv/bin/pip" install --quiet --upgrade pip
 "$INSTALL_DIR/venv/bin/pip" install --quiet -r requirements.txt
 
-# 3. Interactive prompt for environment setup
+# 3. Interactive prompt for configuration
 echo "[3/4] Configuring credentials..."
 
 read -rp "Enter Telegram Bot Token: " bot_token
