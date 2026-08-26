@@ -14,7 +14,6 @@ if ! command -v curl &>/dev/null; then
     exit 1
 fi
 
-# 1. Setup directory and download primary script only
 echo "[1/3] Setting up directory at $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR/backups"
 
@@ -22,7 +21,6 @@ echo "[2/3] Fetching latest shm-backup.sh..."
 curl -sSL "$RAW_SCRIPT_URL" -o "$INSTALL_DIR/shm-backup.sh"
 chmod +x "$INSTALL_DIR/shm-backup.sh"
 
-# 2. Interactive configuration
 if [ ! -f "$INSTALL_DIR/.env" ]; then
     echo "[3/3] Configuring credentials..."
     read -rp "Enter Telegram Bot Token: " bot_token
@@ -38,7 +36,6 @@ EOF
     chmod 600 "$INSTALL_DIR/.env"
 fi
 
-# 4. Global shortcut setup
 cat <<EOF > /usr/local/bin/shm-backup
 #!/usr/bin/env bash
 exec $INSTALL_DIR/shm-backup.sh "\$@"
@@ -53,9 +50,8 @@ CRON_CMD="0 0 * * * /usr/local/bin/shm-backup --run > /dev/null 2>&1"
 
 echo "========================================="
 echo "✅ Installation complete!"
-echo "Starting CLI tool..."
+echo "Starting CLI..."
 echo "========================================="
 sleep 1.5
 
-# Automatically launch CLI menu
 exec /usr/local/bin/shm-backup

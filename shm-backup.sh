@@ -8,7 +8,6 @@ BACKUP_DIR="$SCRIPT_DIR/backups"
 LATEST_BACKUP_FILE="$BACKUP_DIR/shm_backup.sql"
 VERSION="2.3.0"
 
-# Load environment variables
 if [ -f "$ENV_FILE" ]; then
     set -a
     source "$ENV_FILE"
@@ -21,7 +20,6 @@ clear_screen() {
     clear 2>/dev/null || true
 }
 
-# Returns active cron schedule key: "6h", "12h", "daily", "weekly", or "disabled"
 get_current_schedule() {
     local cron_entry
     cron_entry=$(crontab -l 2>/dev/null | grep "shm-backup" || true)
@@ -62,7 +60,6 @@ execute_backup() {
 
     mkdir -p "$BACKUP_DIR"
 
-    # Dump database and overwrite the latest backup file
     if docker compose -f "$SHM_DIR/docker-compose.yml" exec -T mysql /bin/bash -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysqldump -u root shm' > "$LATEST_BACKUP_FILE" 2>/dev/null; then
         echo -e "\033[32m✅ Database dumped successfully to $LATEST_BACKUP_FILE\033[0m"
     else
@@ -138,7 +135,8 @@ configure_schedule() {
     echo ""
     echo "   0. Back to main menu"
     echo ""
-    read -rp "[?] Select option: " sched_choice
+    read -rp "[?] Select option [0]: " sched_choice
+    sched_choice=${sched_choice:-0}
 
     local cron_time=""
     case "$sched_choice" in
@@ -163,7 +161,6 @@ configure_schedule() {
     sleep 1.5
 }
 
-# Non-interactive CLI mode (used by cron)
 if [ "$1" == "--run" ]; then
     execute_backup
     exit 0
@@ -224,7 +221,6 @@ remove_script() {
         rm -f /usr/local/bin/shm-backup
         (crontab -l 2>/dev/null | grep -v "shm-backup") | crontab - 2>/dev/null || true
 
-        # Completely delete /opt/shm/shm-backup directory
         rm -rf "$SCRIPT_DIR"
 
         echo -e "\033[32m✅ Complete cleanup finished. Project folder removed.\033[0m"
@@ -234,7 +230,8 @@ remove_script() {
 
 while true; do
     show_menu
-    read -rp "[?] Select option: " choice
+    read -rp "[?] Select option [0]: " choice
+    choice=${choice:-0}
     case "$choice" in
         1) run_manual_backup ;;
         2) run_manual_restore ;;
