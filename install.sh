@@ -15,7 +15,7 @@ if ! command -v git &> /dev/null; then
     apt-get update -qq && apt-get install -y -qq git || yum install -y git
 fi
 
-echo "[1/4] Cloning repository to $INSTALL_DIR..."
+echo "[1/5] Cloning repository to $INSTALL_DIR..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     git -C "$INSTALL_DIR" pull --quiet
 else
@@ -26,13 +26,13 @@ fi
 cd "$INSTALL_DIR"
 
 # 2. Install Python dependencies
-echo "[2/4] Installing Python dependencies..."
+echo "[2/5] Installing Python dependencies..."
 python3 -m venv venv
 "$INSTALL_DIR/venv/bin/pip" install --quiet --upgrade pip
 "$INSTALL_DIR/venv/bin/pip" install --quiet -r requirements.txt
 
 # 3. Interactive prompt for configuration
-echo "[3/4] Configuring credentials..."
+echo "[3/5] Configuring credentials..."
 
 read -rp "Enter Telegram Bot Token: " bot_token
 read -rp "Enter Telegram Chat ID: " chat_id
@@ -49,7 +49,7 @@ chmod 600 "$INSTALL_DIR/.env"
 echo "Saved configuration to $INSTALL_DIR/.env"
 
 # 4. Create systemd service for Bot Daemon
-echo "[4/4] Creating systemd service for Bot daemon..."
+echo "[4/5] Creating systemd service for Bot daemon..."
 cat <<EOF > /etc/systemd/system/shm-backup-bot.service
 [Unit]
 Description=SHM Backup Telegram Bot Daemon
@@ -69,15 +69,24 @@ EOF
 systemctl daemon-reload
 systemctl enable --now shm-backup-bot.service
 
-# 5. Configure Cron job for automated daily backup
-CRON_CMD="0 3 * * * $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/shm_backup.py --cli > /dev/null 2>&1"
+# 5. Create global binary `shm-backup`
+echo "[5/5] Creating global 'shm-backup' executable command..."
+cat <<EOF > /usr/local/bin/shm-backup
+#!/usr/bin/env bash
+exec $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/shm_backup.py "\$@"
+EOF
 
-(crontab -l 2>/dev/null | grep -F "$INSTALL_DIR/shm_backup.py") || (
+chmod +x /usr/local/bin/shm-backup
+
+# 6. Configure Cron job using global binary
+CRON_CMD="0 3 * * * /usr/local/bin/shm-backup > /dev/null 2>&1"
+
+(crontab -l 2>/dev/null | grep -F "shm-backup") || (
     (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -
 )
 
 echo "========================================="
 echo "✅ Installation complete!"
 echo "Bot Daemon Status: systemctl status shm-backup-bot"
-echo "Manual Backup:     $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/shm_backup.py --cli"
+echo "Run CLI Backup:    shm-backup"
 echo "========================================="

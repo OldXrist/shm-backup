@@ -1,5 +1,4 @@
 import asyncio
-import argparse
 import os
 import subprocess
 import sys
@@ -108,11 +107,8 @@ async def run_bot():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SHM Database Backup Tool")
-    parser.add_argument("--cli", action="store_true", help="Run a one-time backup via CLI (for cron)")
-    args = parser.parse_args()
-
-    if args.cli:
+    # Execution via the `shm-backup` command runs CLI backup mode exclusively
+    if os.path.basename(sys.argv[0]) == "shm-backup":
         asyncio.run(run_cli_backup())
     else:
         asyncio.run(run_bot())
