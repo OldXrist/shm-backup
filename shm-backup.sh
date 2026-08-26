@@ -20,7 +20,7 @@ clear_screen() {
     clear 2>/dev/null || true
 }
 
-# Core Backup Logic in Pure Bash & Curl
+# Core Backup Logic
 execute_backup() {
     echo -e "\n\033[33m⏳ Creating database backup...\033[0m"
 
@@ -75,7 +75,7 @@ fi
 # Interactive Menu Display
 show_menu() {
     clear_screen
-    echo -e "\033[1;36mSHM BACKUP TOOL (Pure Bash)\033[0m"
+    echo -e "\033[1;36mSHM BACKUP TOOL\033[0m"
     echo "Version: $VERSION"
     echo -e "Target Directory: \033[33m$SHM_DIR\033[0m\n"
     echo "   1. Create backup manually (Send to Telegram)"
