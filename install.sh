@@ -6,7 +6,7 @@ INSTALL_DIR="/opt/shm/backup"
 REPO_URL="https://github.com/OldXrist/shm-backup.git"
 
 echo "========================================="
-echo "  SHM Backup Tool Setup (Pure Bash)"
+echo "  SHM Backup Tool Setup"
 echo "========================================="
 
 # 1. Install system dependencies
