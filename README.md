@@ -24,7 +24,7 @@ curl -sSL [https://raw.githubusercontent.com/OldXrist/shm-backup/main/install.sh
 ---
 
 ## Usage
-Launch the interactive CLI menu from anywhere on your server:
+Launch the CLI:
 
 ```bash
 shm-backup
