@@ -1,20 +1,30 @@
-# SHM Backup
+# SHM Backup & Restore
 
-Automated Telegram backup bot and CLI utility for **SHM** database dumps.
+Bash utility for automated MySQL database dumps and manual restoration for SHM.
 
 ---
 
 ## Features
 
-* **One-Click Backups:** Trigger instant MySQL database dumps directly inside Telegram.
-* **Automated Cron Backups:** Scheduled daily backups sent straight to your personal Telegram chat or channel.
-* **Service Daemon:** Automatically runs in the background using a lightweight `systemd` unit with minimal memory overhead.
+* **Manual Dumps:** Generate and send MySQL dumps directly to Telegram via CLI.
+* **Database Restoration:** Restore database state directly from the latest SQL backup file.
+* **Flexible Scheduling:** Configurable cron routines for 6h, 12h, daily, or weekly runs (UTC).
+* **Environment Configuration:** Manage environment credentials and directory paths directly from the CLI.
 
 ---
 
 ## Installation
 
-Run the installer script on your server:
+Run the installer script:
 
 ```bash
-curl -o ~/shm-backup.sh https://raw.githubusercontent.com/OldXrist/shm-backup/main/install.sh && chmod +x ~/shm-backup.sh && ~/shm-backup.sh && rm ~/shm-backup.sh
+curl -sSL [https://raw.githubusercontent.com/OldXrist/shm-backup/main/install.sh](https://raw.githubusercontent.com/OldXrist/shm-backup/main/install.sh) | bash
+```
+
+---
+
+## Usage
+Launch the interactive CLI menu from anywhere on your server:
+
+```bash
+shm-backup
