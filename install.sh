@@ -6,15 +6,15 @@ INSTALL_DIR="/opt/shm/backup"
 REPO_URL="https://github.com/OldXrist/shm-backup.git"
 
 echo "========================================="
-echo "  SHM Backup Tool Installation Setup"
+echo "  SHM Backup Tool Setup (Pure Bash)"
 echo "========================================="
 
-# 1. Ensure system dependencies are installed
-echo "[1/5] Installing system dependencies..."
-apt-get update -qq && apt-get install -y -qq git python3.12-venv python3-pip
+# 1. Install system dependencies
+echo "[1/4] Installing dependencies..."
+apt-get update -qq && apt-get install -y -qq git curl docker-compose-plugin 2>/dev/null || true
 
-# 2. Clone repository...
-
+# 2. Clone/Update repository
+echo "[2/4] Deploying files to $INSTALL_DIR..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     git -C "$INSTALL_DIR" pull --quiet
 else
@@ -22,54 +22,24 @@ else
     git clone --quiet "$REPO_URL" "$INSTALL_DIR"
 fi
 
-cd "$INSTALL_DIR"
-
-# 2. Install Python dependencies using Python 3.12
-echo "[2/5] Creating Python 3.12 virtual environment..."
-python3.12 -m venv venv
-"$INSTALL_DIR/venv/bin/pip" install --quiet --upgrade pip
-"$INSTALL_DIR/venv/bin/pip" install --quiet -r requirements.txt
-
 # 3. Interactive prompt for configuration
-echo "[3/5] Configuring credentials..."
+if [ ! -f "$INSTALL_DIR/.env" ]; then
+    echo "[3/4] Configuring credentials..."
+    read -rp "Enter Telegram Bot Token: " bot_token
+    read -rp "Enter Telegram Chat ID: " chat_id
+    read -rp "Enter SHM project directory [/opt/shm]: " shm_dir
+    shm_dir=${shm_dir:-/opt/shm}
 
-read -rp "Enter Telegram Bot Token: " bot_token
-read -rp "Enter Telegram Chat ID: " chat_id
-read -rp "Enter SHM project directory [/opt/shm]: " shm_dir
-shm_dir=${shm_dir:-/opt/shm}
-
-cat <<EOF > "$INSTALL_DIR/.env"
+    cat <<EOF > "$INSTALL_DIR/.env"
 TELEGRAM_BOT_TOKEN=$bot_token
 TELEGRAM_CHAT_ID=$chat_id
 SHM_DIR=$shm_dir
 EOF
+    chmod 600 "$INSTALL_DIR/.env"
+fi
 
-chmod 600 "$INSTALL_DIR/.env"
-echo "Saved configuration to $INSTALL_DIR/.env"
-
-# 4. Create systemd service for Bot Daemon
-echo "[4/5] Creating systemd service for Bot daemon..."
-cat <<EOF > /etc/systemd/system/shm-backup-bot.service
-[Unit]
-Description=SHM Backup Telegram Bot Daemon
-After=network.target docker.service
-
-[Service]
-Type=simple
-WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/shm_backup.py
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable --now shm-backup-bot.service
-
-# 5. Create global binary shortcut
-echo "[5/5] Creating global 'shm-backup' executable command..."
+# 4. Global shortcut and cron setup
+echo "[4/4] Creating executable shortcut and cron job..."
 cat <<EOF > /usr/local/bin/shm-backup
 #!/usr/bin/env bash
 exec $INSTALL_DIR/shm-backup.sh "\$@"
@@ -78,15 +48,12 @@ EOF
 chmod +x /usr/local/bin/shm-backup
 chmod +x "$INSTALL_DIR/shm-backup.sh"
 
-# 6. Configure Cron job using non-interactive flag
 CRON_CMD="0 3 * * * /usr/local/bin/shm-backup --run > /dev/null 2>&1"
-
 (crontab -l 2>/dev/null | grep -F "shm-backup") || (
     (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -
 )
 
 echo "========================================="
 echo "✅ Installation complete!"
-echo "Bot Daemon Status: systemctl status shm-backup-bot"
-echo "Run CLI Backup:    shm-backup"
+echo "Run CLI Backup: shm-backup"
 echo "========================================="
