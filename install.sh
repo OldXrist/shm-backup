@@ -14,7 +14,7 @@ echo "[1/5] Checking dependencies and cloning repository..."
 
 if ! command -v git &> /dev/null || ! command -v python3.12 &> /dev/null || ! python3.12 -m venv --help &> /dev/null; then
     echo "[!] Installing missing system packages (git, python3.12, python3.12-venv)..."
-    apt-get update -qq && apt-get install -y -qq git python3.12 python3.12-venv || yum install -y git python312
+    apt-get update && apt-get install -y git python3.12 python3.12-venv || yum install -y git python312
 fi
 
 if [ -d "$INSTALL_DIR/.git" ]; then
