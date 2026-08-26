@@ -9,13 +9,11 @@ echo "========================================="
 echo "  SHM Backup Tool Installation Setup"
 echo "========================================="
 
-# 1. Ensure git, python3.12, and python3.12-venv are installed
-echo "[1/5] Checking dependencies and cloning repository..."
+# 1. Ensure system dependencies are installed
+echo "[1/5] Installing system dependencies..."
+apt-get update -qq && apt-get install -y -qq git python3.12-venv python3-pip
 
-if ! command -v git &> /dev/null || ! python3.12 -c "import ensurepip" &> /dev/null; then
-    echo "[!] Installing missing system packages (git, python3.12, python3.12-venv)..."
-    apt-get update && apt-get install -y git python3.12 python3.12-venv || yum install -y git python312
-fi
+# 2. Clone repository...
 
 if [ -d "$INSTALL_DIR/.git" ]; then
     git -C "$INSTALL_DIR" pull --quiet
