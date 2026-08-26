@@ -9,13 +9,14 @@ echo "========================================="
 echo "  SHM Backup Tool Installation Setup"
 echo "========================================="
 
-# 1. Ensure git is installed and target directory is ready
-if ! command -v git &> /dev/null; then
-    echo "[!] Git is required. Installing git..."
-    apt-get update -qq && apt-get install -y -qq git || yum install -y git
+# 1. Ensure git, python3.12, and python3.12-venv are installed
+echo "[1/5] Checking dependencies and cloning repository..."
+
+if ! command -v git &> /dev/null || ! command -v python3.12 &> /dev/null || ! python3.12 -m venv --help &> /dev/null; then
+    echo "[!] Installing missing system packages (git, python3.12, python3.12-venv)..."
+    apt-get update -qq && apt-get install -y -qq git python3.12 python3.12-venv || yum install -y git python312
 fi
 
-echo "[1/5] Cloning repository to $INSTALL_DIR..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     git -C "$INSTALL_DIR" pull --quiet
 else
@@ -25,9 +26,9 @@ fi
 
 cd "$INSTALL_DIR"
 
-# 2. Install Python dependencies
-echo "[2/5] Installing Python dependencies..."
-python3 -m venv venv
+# 2. Install Python dependencies using Python 3.12
+echo "[2/5] Creating Python 3.12 virtual environment..."
+python3.12 -m venv venv
 "$INSTALL_DIR/venv/bin/pip" install --quiet --upgrade pip
 "$INSTALL_DIR/venv/bin/pip" install --quiet -r requirements.txt
 
