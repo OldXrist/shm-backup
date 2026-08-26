@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/.env"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 LATEST_BACKUP_FILE="$BACKUP_DIR/shm_backup.sql"
-VERSION="2.1.0"
+VERSION="2.3.0"
 
 # Load environment variables
 if [ -f "$ENV_FILE" ]; then
@@ -19,6 +19,37 @@ SHM_DIR="${SHM_DIR:-/opt/shm}"
 
 clear_screen() {
     clear 2>/dev/null || true
+}
+
+# Returns active cron schedule key: "6h", "12h", "daily", "weekly", or "disabled"
+get_current_schedule() {
+    local cron_entry
+    cron_entry=$(crontab -l 2>/dev/null | grep "shm-backup" || true)
+
+    if [ -z "$cron_entry" ]; then
+        echo "disabled"
+    elif echo "$cron_entry" | grep -q "0 \*/6 \* \* \*"; then
+        echo "6h"
+    elif echo "$cron_entry" | grep -q "0 \*/12 \* \* \*"; then
+        echo "12h"
+    elif echo "$cron_entry" | grep -q "0 0 \* \* \*"; then
+        echo "daily"
+    elif echo "$cron_entry" | grep -q "0 0 \* \* 0"; then
+        echo "weekly"
+    else
+        echo "custom"
+    fi
+}
+
+get_current_schedule_label() {
+    case "$(get_current_schedule)" in
+        "6h") echo "Every 6 hours" ;;
+        "12h") echo "Every 12 hours" ;;
+        "daily") echo "Daily at 00:00 UTC (03:00 MSK)" ;;
+        "weekly") echo "Weekly on Sunday at 00:00 UTC (03:00 MSK)" ;;
+        "disabled") echo "Disabled" ;;
+        *) echo "Custom Cron" ;;
+    esac
 }
 
 execute_backup() {
@@ -87,12 +118,23 @@ execute_restore() {
 
 configure_schedule() {
     clear_screen
-    echo -e "\033[1;36mBACKUP FREQUENCY CONFIGURATION (UTC)\033[0m\n"
-    echo "   1. Every 6 hours"
-    echo "   2. Every 12 hours"
-    echo "   3. Daily at 00:00 UTC (03:00 MSK) [Default]"
-    echo "   4. Weekly (Every Sunday at 00:00 UTC / 03:00 MSK)"
-    echo "   5. Disable automated backups"
+    local current
+    current=$(get_current_schedule)
+
+    mark() {
+        if [ "$1" == "$current" ]; then
+            echo -e " \033[1;32m[ACTIVE]\033[0m"
+        else
+            echo ""
+        fi
+    }
+
+    echo -e "\033[1;36mBACKUP FREQUENCY CONFIGURATION\033[0m\n"
+    echo -e "   1. Every 6 hours$(mark '6h')"
+    echo -e "   2. Every 12 hours$(mark '12h')"
+    echo -e "   3. Daily at 00:00 UTC (03:00 MSK)$(mark 'daily')"
+    echo -e "   4. Weekly (Every Sunday at 00:00 UTC)$(mark 'weekly')"
+    echo -e "   5. Disable automated backups$(mark 'disabled')"
     echo ""
     echo "   0. Back to main menu"
     echo ""
@@ -114,11 +156,10 @@ configure_schedule() {
         *) echo -e "\033[31mInvalid option.\033[0m"; sleep 1; return 0 ;;
     esac
 
-    # Force CRONTZ or system cron evaluation context to UTC
     (crontab -l 2>/dev/null | grep -v "shm-backup") | crontab - 2>/dev/null || true
     (crontab -l 2>/dev/null; echo "$cron_time /usr/local/bin/shm-backup --run > /dev/null 2>&1") | crontab -
 
-    echo -e "\n\033[32m✅ Backup schedule updated to run at UTC time!\033[0m"
+    echo -e "\n\033[32m✅ Backup schedule updated!\033[0m"
     sleep 1.5
 }
 
@@ -130,14 +171,18 @@ fi
 
 show_menu() {
     clear_screen
+    local sched_status
+    sched_status=$(get_current_schedule_label)
+
     echo -e "\033[1;36mSHM BACKUP & RESTORE TOOL\033[0m"
     echo "Version: $VERSION"
-    echo -e "Target Directory: \033[33m$SHM_DIR\033[0m\n"
+    echo -e "Target Directory: \033[33m$SHM_DIR\033[0m"
+    echo -e "Active Schedule:  \033[32m$sched_status\033[0m\n"
     echo "   1. Create backup manually (Send to Telegram)"
-    echo "   2. Restore database from latest backup"
+    echo "   2. Restore from backup"
     echo ""
-    echo "   3. Configure backup schedule (UTC)"
-    echo "   4. Edit configuration (.env)"
+    echo "   3. Configure backup schedule"
+    echo "   4. Edit configuration"
     echo "   5. Update script"
     echo "   6. Remove script"
     echo ""
@@ -179,7 +224,7 @@ remove_script() {
         rm -f /usr/local/bin/shm-backup
         (crontab -l 2>/dev/null | grep -v "shm-backup") | crontab - 2>/dev/null || true
 
-        # Remove the backup project directory
+        # Completely delete /opt/shm/shm-backup directory
         rm -rf "$SCRIPT_DIR"
 
         echo -e "\033[32m✅ Complete cleanup finished. Project folder removed.\033[0m"
