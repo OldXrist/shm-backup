@@ -72,7 +72,7 @@ systemctl enable --now shm-backup-bot.service
 echo "[5/5] Creating global 'shm-backup' executable command..."
 cat <<EOF > /usr/local/bin/shm-backup
 #!/usr/bin/env bash
-exec $INSTALL_DIR/venv/bin/python3 $INSTALL_DIR/shm_backup.py "\$@"
+cd $INSTALL_DIR && exec $INSTALL_DIR/venv/bin/python3 -m shm_backup "\$@"
 EOF
 
 chmod +x /usr/local/bin/shm-backup

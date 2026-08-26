@@ -107,7 +107,6 @@ async def run_bot():
 
 
 if __name__ == "__main__":
-    # Execution via the `shm-backup` command runs CLI backup mode exclusively
     if os.path.basename(sys.argv[0]) == "shm-backup":
         asyncio.run(run_cli_backup())
     else:
