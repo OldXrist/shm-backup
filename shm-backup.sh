@@ -82,11 +82,12 @@ execute_backup() {
     local file_size
     file_size=$(du -h "$backup_file" | cut -f1)
     local formatted_time
-    formatted_time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+    formatted_time=$(date -u +'%Y-%m-%d %H:%M:%S')
 
     local caption
-    caption="✅ Backup successfully created
-🗓 Timestamp: ${formatted_time}
+    caption="➖➖➖➖➖➖➖➖➖
+✅ Backup successfully created
+🗓 Date: ${formatted_time}
 📦 Size: ${file_size}"
 
     echo -e "\033[33m⏳ Sending backup file to Telegram...\033[0m"
