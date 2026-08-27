@@ -110,10 +110,10 @@ execute_restore() {
     echo -e "\n\033[1;33m=== Restore SHM Database ===\033[0m"
 
     local latest_backup
-    latest_backup=$(ls -t "$BACKUP_DIR"/remnawave_backup_panel_*.sql 2>/dev/null | head -n 1 || true)
+    latest_backup=$(ls -t "$BACKUP_DIR"/shm_backup_db_*.sql 2>/dev/null | head -n 1 || true)
 
     if [ -z "$latest_backup" ] || [ ! -f "$latest_backup" ]; then
-        echo -e "\033[31m❌ No backup file found matching remnawave_backup_panel_*.sql in $BACKUP_DIR\033[0m"
+        echo -e "\033[31m❌ No backup file found matching shm_backup_db_*.sql in $BACKUP_DIR\033[0m"
         echo "Please run a backup first."
         return 1
     fi
