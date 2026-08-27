@@ -5,7 +5,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/.env"
 BACKUP_DIR="$SCRIPT_DIR/backups"
-LATEST_BACKUP_FILE="$BACKUP_DIR/shm_backup.sql"
 VERSION="2.3.0"
 
 if [ -f "$ENV_FILE" ]; then
@@ -51,6 +50,12 @@ get_current_schedule_label() {
 }
 
 execute_backup() {
+    local start_time
+    start_time=$(date +%s)
+    local timestamp_str
+    timestamp_str=$(date -u +'%Y-%m-%d_%H_%M_%S')
+    local backup_file="$BACKUP_DIR/remnawave_backup_panel_${timestamp_str}.sql"
+
     echo -e "\n\033[33m⏳ Creating database backup...\033[0m"
 
     if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
@@ -60,22 +65,37 @@ execute_backup() {
 
     mkdir -p "$BACKUP_DIR"
 
-    if docker compose -f "$SHM_DIR/docker-compose.yml" exec -T mysql /bin/bash -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysqldump -u root shm' > "$LATEST_BACKUP_FILE" 2>/dev/null; then
-        echo -e "\033[32m✅ Database dumped successfully to $LATEST_BACKUP_FILE\033[0m"
+    if docker compose -f "$SHM_DIR/docker-compose.yml" exec -T mysql /bin/bash -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysqldump -u root shm' > "$backup_file" 2>/dev/null; then
+        echo -e "\033[32m✅ Database dumped successfully to $backup_file\033[0m"
     else
-        if docker exec -t $(docker ps -qf "name=mysql") /bin/bash -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysqldump -u root shm' > "$LATEST_BACKUP_FILE" 2>/dev/null; then
-             echo -e "\033[32m✅ Database dumped successfully to $LATEST_BACKUP_FILE\033[0m"
+        if docker exec -t $(docker ps -qf "name=mysql") /bin/bash -c 'MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysqldump -u root shm' > "$backup_file" 2>/dev/null; then
+             echo -e "\033[32m✅ Database dumped successfully to $backup_file\033[0m"
         else
              echo -e "\033[31m❌ Error: Failed to generate MySQL dump.\033[0m"
              return 1
         fi
     fi
 
-    echo -e "\033[33m⏳ Sending latest backup file to Telegram...\033[0m"
+    local end_time
+    end_time=$(date +%s)
+    local duration=$((end_time - start_time))
+    local file_size
+    file_size=$(du -h "$backup_file" | cut -f1)
+    local formatted_time
+    formatted_time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+
+    local caption
+    caption="Status: SUCCESS
+Timestamp: ${formatted_time}
+Size: ${file_size}
+Duration: ${duration}s
+File: remnawave_backup_panel_${timestamp_str}.sql"
+
+    echo -e "\033[33m⏳ Sending backup file to Telegram...\033[0m"
 
     RESPONSE=$(curl -s -F chat_id="$TELEGRAM_CHAT_ID" \
-         -F document=@"$LATEST_BACKUP_FILE" \
-         -F caption="📦 SHM Backup — $(date -u +'%Y-%m-%d %H:%M:%S UTC')" \
+         -F document=@"$backup_file" \
+         -F caption="$caption" \
          "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument")
 
     if echo "$RESPONSE" | grep -q '"ok":true'; then
@@ -90,19 +110,22 @@ execute_backup() {
 execute_restore() {
     echo -e "\n\033[1;33m=== Restore SHM Database ===\033[0m"
 
-    if [ ! -f "$LATEST_BACKUP_FILE" ]; then
-        echo -e "\033[31m❌ No backup file found at $LATEST_BACKUP_FILE\033[0m"
+    local latest_backup
+    latest_backup=$(ls -t "$BACKUP_DIR"/remnawave_backup_panel_*.sql 2>/dev/null | head -n 1 || true)
+
+    if [ -z "$latest_backup" ] || [ ! -f "$latest_backup" ]; then
+        echo -e "\033[31m❌ No backup file found matching remnawave_backup_panel_*.sql in $BACKUP_DIR\033[0m"
         echo "Please run a backup first."
         return 1
     fi
 
-    echo -e "Target File: \033[36m$LATEST_BACKUP_FILE\033[0m"
+    echo -e "Target File: \033[36m$latest_backup\033[0m"
     read -rp "⚠️ Are you sure you want to restore the database? This will OVERWRITE existing DB data! (y/N): " confirm
 
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo -e "\n\033[33m⏳ Restoring database into MySQL container...\033[0m"
 
-        if docker compose -f "$SHM_DIR/docker-compose.yml" exec -T mysql /bin/bash -c 'MYSQL_PWD=${MYSQL_ROOT_PASSWORD} mysql -u root shm' < "$LATEST_BACKUP_FILE"; then
+        if docker compose -f "$SHM_DIR/docker-compose.yml" exec -T mysql /bin/bash -c 'MYSQL_PWD=${MYSQL_ROOT_PASSWORD} mysql -u root shm' < "$latest_backup"; then
             echo -e "\033[32m✅ Database restore complete!\033[0m"
         else
             echo -e "\033[31m❌ Restore failed.\033[0m"
