@@ -1,6 +1,6 @@
 # SHM Backup & Restore
 
-Bash utility for automated MySQL database dumps and manual restoration for SHM.
+Bash utility for automated MySQL database dumps and manual restoration for SHM (Universal Billing System).
 
 ---
 
