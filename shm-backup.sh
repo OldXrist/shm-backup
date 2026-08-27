@@ -54,7 +54,7 @@ execute_backup() {
     start_time=$(date +%s)
     local timestamp_str
     timestamp_str=$(date -u +'%Y-%m-%d_%H_%M_%S')
-    local backup_file="$BACKUP_DIR/remnawave_backup_panel_${timestamp_str}.sql"
+    local backup_file="$BACKUP_DIR/shm_backup_db_${timestamp_str}.sql"
 
     echo -e "\n\033[33m⏳ Creating database backup...\033[0m"
 
@@ -85,11 +85,9 @@ execute_backup() {
     formatted_time=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
 
     local caption
-    caption="Status: SUCCESS
-Timestamp: ${formatted_time}
-Size: ${file_size}
-Duration: ${duration}s
-File: remnawave_backup_panel_${timestamp_str}.sql"
+    caption="✅ Backup successfully created
+🗓 Timestamp: ${formatted_time}
+📦 Size: ${file_size}"
 
     echo -e "\033[33m⏳ Sending backup file to Telegram...\033[0m"
 
